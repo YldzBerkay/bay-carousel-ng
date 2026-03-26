@@ -1,45 +1,57 @@
-# bay-carousel
+# bay-carousel-ng
 
-`bay-carousel`, Angular 21+ standalone projelerde kullanilmak uzere hazirlanmis hafif bir carousel/slider kutuphanesidir.
+`bay-carousel-ng` is a lightweight carousel/slider library for Angular 21+ standalone applications.
+
+[npm package](https://www.npmjs.com/package/bay-carousel-ng)
 
 - Standalone Angular component
-- Template tabanli slide sistemi (`ng-template`)
-- 5 farkli gorunum modu (`default`, `navigation`, `pagination`, `fraction`, `breakpoint`)
-- Breakpoint tabanli responsive davranis
-- Drag/touch desteği
-- Autoplay ve loop
-- Programatik kontrol API'si (`swiperRef`)
-- Varsayilan gomulu SVG ikonlar + custom icon template desteği
+- Template-based slide system (`ng-template`)
+- 5 display modes (`default`, `navigation`, `pagination`, `fraction`, `breakpoint`)
+- Breakpoint-based responsive behavior
+- Drag/touch support
+- Autoplay and loop
+- Programmatic control API (`swiperRef`)
+- Built-in SVG icons + custom icon template support
 
-## Icerik
+## Contents
 
-- [Kurulum](#kurulum)
-- [Hizli Baslangic](#hizli-baslangic)
-- [Kullanim Modlari](#kullanim-modlari)
-- [API Referansi](#api-referansi)
-- [Custom Icon Template](#custom-icon-template)
-- [Programatik Kontrol](#programatik-kontrol)
-- [Stil Ozellestirme](#stil-ozellestirme)
-- [SSR ve Tarayici Davranisi](#ssr-ve-tarayici-davranisi)
-- [Gelistirme Build Pack](#gelistirme-build-pack)
-- [npm Public Publish Rehberi](#npm-public-publish-rehberi)
+- [Installation](#installation)
+- [npm Page](#npm-page)
+- [Quick Start](#quick-start)
+- [Modes](#modes)
+- [API Reference](#api-reference)
+- [Custom Icon Templates](#custom-icon-templates)
+- [Programmatic Control](#programmatic-control)
+- [Style Customization](#style-customization)
+- [SSR and Browser Behavior](#ssr-and-browser-behavior)
+- [Development Build Pack](#development-build-pack)
+- [npm Public Publish Guide](#npm-public-publish-guide-maintainer)
 - [Troubleshooting](#troubleshooting)
 
-## Kurulum
+## Installation
 
 ```bash
-npm i bay-carousel
+npm i bay-carousel-ng
 ```
 
-> `peerDependencies`: `@angular/core` ve `@angular/common` (v21+)
+> `peerDependencies`: `@angular/core` and `@angular/common` (v21+)
 
-## Hizli Baslangic
+## npm Page
 
-### 1) Component import et
+- Package URL: [https://www.npmjs.com/package/bay-carousel-ng](https://www.npmjs.com/package/bay-carousel-ng)
+- You can check the latest published version with:
+
+```bash
+npm view bay-carousel-ng version
+```
+
+## Quick Start
+
+### 1) Import components
 
 ```ts
 import { Component } from '@angular/core';
-import { BayCarouselComponent, BayCarouselSlideDirective } from 'bay-carousel';
+import { BayCarouselComponent, BayCarouselSlideDirective } from 'bay-carousel-ng';
 
 @Component({
   selector: 'app-example',
@@ -49,7 +61,7 @@ import { BayCarouselComponent, BayCarouselSlideDirective } from 'bay-carousel';
 export class ExampleComponent {}
 ```
 
-### 2) Template kullanimi
+### 2) Use in template
 
 ```html
 <app-bay-carousel>
@@ -65,51 +77,51 @@ export class ExampleComponent {}
 </app-bay-carousel>
 ```
 
-## Kullanim Modlari
+## Modes
 
-`mode` input'u ile davranis secilir.
+You can control behavior with the `mode` input.
 
 ### `default`
-- Sadece slide alani calisir.
-- Nav/pagination UI render edilmez.
+- Renders only the slide area.
+- No navigation/pagination UI.
 
 ```html
 <app-bay-carousel mode="default">...</app-bay-carousel>
 ```
 
 ### `navigation`
-- Sol/sag ok butonlari render edilir.
-- Default olarak gomulu SVG ikon kullanir.
-- `bayCarouselPrevIcon` ve `bayCarouselNextIcon` ile override edilebilir.
+- Renders previous/next navigation buttons.
+- Uses built-in SVG icons by default.
+- Can be overridden with `bayCarouselPrevIcon` and `bayCarouselNextIcon`.
 
 ```html
 <app-bay-carousel mode="navigation">...</app-bay-carousel>
 ```
 
 ### `pagination`
-- Altta dot pagination render edilir.
-- Dot'a tiklandiginda ilgili slide'a gider.
+- Renders pagination dots below.
+- Clicking a dot moves to that slide.
 
 ```html
 <app-bay-carousel mode="pagination">...</app-bay-carousel>
 ```
 
 ### `fraction`
-- `aktifSlide / toplamSlide` formatinda bilgi gosterir.
+- Displays `activeSlide / totalSlides`.
 
 ```html
 <app-bay-carousel mode="fraction">...</app-bay-carousel>
 ```
 
 ### `breakpoint`
-- Debug odakli moddur.
-- Ekran genisligi ve aktif `slidesPerView` bilgisini gosterir.
+- Debug-focused mode.
+- Shows current screen width and active `slidesPerView`.
 
 ```html
 <app-bay-carousel mode="breakpoint">...</app-bay-carousel>
 ```
 
-## API Referansi
+## API Reference
 
 ### Types
 
@@ -143,42 +155,42 @@ interface BayCarouselSwiperRef {
 ### Inputs
 
 - `config: BayCarouselConfig`  
-  Ana konfigrasyon nesnesi.
+  Main configuration object.
 - `mode: BayCarouselMode`  
-  Gorunum modu.
+  Display mode.
 - `slidesPerView?: number`  
-  `config.slidesPerView` uzerine override eder.
+  Overrides `config.slidesPerView`.
 - `spaceBetween?: number`  
-  `config.spaceBetween` uzerine override eder.
+  Overrides `config.spaceBetween`.
 - `maxHeight?: number | string`  
-  Carousel yukseklik limiti (`300` veya `'300px'`).
+  Max height for the carousel (`300` or `'300px'`).
 - `simulateTouch?: boolean`  
-  Mouse drag desteği (`config.simulateTouch` fallback).
+  Enables mouse drag support (fallback to `config.simulateTouch`).
 - `loop?: boolean`  
-  Son/ilk slaytta donguye sarar.
+  Wraps from last to first and vice versa.
 - `pagination?: unknown`  
-  Geriye uyumluluk alani (su an ic mantikta kullanilmaz).
+  Backward compatibility input (currently not used in internal logic).
 - `allowTouchMove?: boolean`  
-  `false` oldugunda touch drag kapatilir.
+  Disables touch drag when set to `false`.
 - `touchStartPreventDefault?: boolean`  
-  Touch start'ta `preventDefault` kontrolu.
+  Controls `preventDefault` on touch start.
 - `dir?: string`  
-  Container'a `dir` attr yazmak icin (`ltr` / `rtl`).
+  Sets `dir` attribute on container (`ltr` / `rtl`).
 
 ### Outputs
 
 - `slideChange: number`  
-  Aktif index degistiginde tetiklenir.
+  Emits when active index changes.
 - `swiper: BayCarouselSwiperRef`  
-  Programatik kontrol object'i emit eder.
+  Emits programmatic control object.
 
-### `config.breakpoints` davranisi
+### `config.breakpoints` behavior
 
-- Breakpoint key'leri piksel cinsinden minimum genisliktir.
-- Sistem ascending siralar, sonra `screenWidth >= breakpoint` olan en son uygun degeri uygular.
-- Her breakpoint'te sadece degisecek alanlari yazmaniz yeterlidir.
+- Breakpoint keys are minimum widths in pixels.
+- Breakpoints are sorted in ascending order, and the last matching one (`screenWidth >= breakpoint`) wins.
+- You only need to define values that should change at each breakpoint.
 
-Ornek:
+Example:
 
 ```ts
 config: BayCarouselConfig = {
@@ -192,9 +204,9 @@ config: BayCarouselConfig = {
 };
 ```
 
-## Custom Icon Template
+## Custom Icon Templates
 
-`mode="navigation"` iken default SVG yerine custom template verebilirsiniz.
+When `mode="navigation"`, you can replace built-in SVG icons with custom templates.
 
 ```html
 <app-bay-carousel mode="navigation">
@@ -211,13 +223,13 @@ config: BayCarouselConfig = {
 </app-bay-carousel>
 ```
 
-## Programatik Kontrol
+## Programmatic Control
 
-### `viewChild` ile component referansi
+### Using `viewChild` component reference
 
 ```ts
 import { Component, viewChild } from '@angular/core';
-import { BayCarouselComponent } from 'bay-carousel';
+import { BayCarouselComponent } from 'bay-carousel-ng';
 
 @Component({
   selector: 'app-programmatic',
@@ -245,14 +257,14 @@ export class ProgrammaticComponent {
 <app-bay-carousel #carousel>...</app-bay-carousel>
 ```
 
-### `swiper` output ile referans yakalama
+### Using `swiper` output
 
 ```html
 <app-bay-carousel (swiper)="setSwiper($event)">...</app-bay-carousel>
 ```
 
 ```ts
-import { BayCarouselSwiperRef } from 'bay-carousel';
+import { BayCarouselSwiperRef } from 'bay-carousel-ng';
 
 swiperRef?: BayCarouselSwiperRef;
 
@@ -261,9 +273,9 @@ setSwiper(ref: BayCarouselSwiperRef): void {
 }
 ```
 
-## Stil Ozellestirme
+## Style Customization
 
-Paket icinde fallback CSS variable tanimlari vardir. Proje seviyesinde override edebilirsiniz:
+The package defines fallback CSS variables. You can override them at app level:
 
 ```scss
 app-bay-carousel {
@@ -277,85 +289,85 @@ app-bay-carousel {
 }
 ```
 
-## SSR ve Tarayici Davranisi
+## SSR and Browser Behavior
 
-- Paket SSR uyumlu olacak sekilde `isPlatformBrowser` kontrolu kullanir.
-- `window` ve `ResizeObserver` yalnizca browser ortaminda aktif olur.
-- SSR tarafinda varsayilan ekran genisligi fallback degeri olarak ele alinir.
+- Uses `isPlatformBrowser` checks for SSR compatibility.
+- `window` and `ResizeObserver` are only used in browser runtime.
+- Uses a fallback screen width on server-side rendering.
 
-## Gelistirme Build Pack
+## Development Build Pack
 
-Workspace root'unda:
+From workspace root:
 
 ```bash
 npm install
 npm run build
 ```
 
-Sadece library build:
+Library-only build:
 
 ```bash
 ng build bay-carousel
 ```
 
-Paket dry-run:
+Package dry-run:
 
 ```bash
 cd dist/bay-carousel
 npm pack
 ```
 
-## npm Public Publish Rehberi
+## npm Public Publish Guide (Maintainer)
 
-Asagidaki adimlar workspace root'u icindir:
+Run the following steps from workspace root:
 
-1. Surumu guncelle:
+1. Bump version:
 
 ```bash
 cd projects/bay-carousel
 npm version patch
 ```
 
-2. Library build al:
+2. Build library:
 
 ```bash
 cd ../..
 ng build bay-carousel
 ```
 
-3. Dist paketini test et:
+3. Test package tarball:
 
 ```bash
 cd dist/bay-carousel
 npm pack
 ```
 
-4. npm hesabi ile login ol:
+4. Login to npm:
 
 ```bash
 npm login
 ```
 
-5. Public publish yap:
+5. Publish publicly:
 
 ```bash
 npm publish --access public
 ```
 
-Notlar:
-- Paket adi npm'de musait olmali (`bay-carousel`).
-- Scoped package kullanirsaniz (`@scope/bay-carousel`) yine `--access public` gereklidir.
-- `README.md`, `LICENSE`, `repository` bilgileri publish oncesi kontrol edilmelidir.
+Notes:
+- Package name must be available on npm (`bay-carousel-ng`).
+- Scoped packages (`@scope/bay-carousel-ng`) also require `--access public`.
+- Verify `README.md`, `LICENSE`, and repository metadata before publishing.
 
 ## Troubleshooting
 
 - `NG0303: Can't bind to ...`  
-  Gerekli standalone importlari yaptiginizi kontrol edin (`BayCarouselComponent`, `BayCarouselSlideDirective`).
-- Dot veya nav gorunmuyor  
-  `mode` degerini kontrol edin (`navigation` / `pagination` / `fraction`).
-- Kaydirma calismiyor  
-  `allowTouchMove` false olabilir veya `simulateTouch` mouse icin kapali olabilir.
-- Beklenmedik slide genisligi  
-  Parent container'in gercek width aldigindan emin olun.
-- Programatik kontrol undefined  
-  `viewChild` referansi olusmadan method cagirmayin (`AfterViewInit` sonrasi cagrin).
+  Ensure standalone imports are included (`BayCarouselComponent`, `BayCarouselSlideDirective`).
+- Navigation/pagination not visible  
+  Check `mode` value (`navigation` / `pagination` / `fraction`).
+- Drag does not work  
+  `allowTouchMove` might be `false`, or `simulateTouch` may be disabled for mouse drag.
+- Unexpected slide widths  
+  Ensure parent container has a resolved width.
+- Programmatic control is undefined  
+  Do not call methods before `viewChild` is ready (use after view init lifecycle).
