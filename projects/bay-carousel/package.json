@@ -1,0 +1,30 @@
+{
+  "name": "bay-carousel",
+  "version": "0.0.1",
+  "description": "Angular 21 standalone carousel component with navigation, pagination and breakpoint modes.",
+  "keywords": [
+    "angular",
+    "carousel",
+    "slider",
+    "standalone",
+    "bay-carousel"
+  ],
+  "author": "Berkay",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "REPLACE_WITH_GIT_REPOSITORY_URL"
+  },
+  "homepage": "REPLACE_WITH_PACKAGE_HOMEPAGE_URL",
+  "bugs": {
+    "url": "REPLACE_WITH_ISSUES_URL"
+  },
+  "peerDependencies": {
+    "@angular/common": "^21.2.0",
+    "@angular/core": "^21.2.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}
