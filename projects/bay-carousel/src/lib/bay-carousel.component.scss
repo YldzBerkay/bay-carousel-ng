@@ -14,16 +14,20 @@
   overflow: hidden;
   position: relative;
   user-select: none;
-  cursor: grab;
+  cursor: default;
   touch-action: pan-y pinch-zoom;
-
-  &:active {
-    cursor: grabbing;
-  }
 
   &:focus-visible {
     outline: 3px solid var(--bay-carousel-primary-color);
     outline-offset: 3px;
+  }
+}
+
+.bay-carousel-container--mouse-drag-enabled {
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
   }
 }
 

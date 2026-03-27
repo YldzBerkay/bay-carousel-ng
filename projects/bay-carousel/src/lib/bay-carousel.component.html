@@ -1,6 +1,7 @@
 <div
   #container
   class="bay-carousel-container"
+  [class.bay-carousel-container--mouse-drag-enabled]="isMouseDragEnabled()"
   [attr.dir]="dir() ?? null"
   [attr.aria-label]="ariaLabel()"
   [attr.aria-roledescription]="'carousel'"

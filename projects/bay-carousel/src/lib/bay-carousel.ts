@@ -201,6 +201,7 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
   readonly isRtl = computed(() => (this.dir() ?? '').toLowerCase() === 'rtl');
   readonly prevIconTemplate = computed(() => this.prevIcons?.first?.template ?? null);
   readonly nextIconTemplate = computed(() => this.nextIcons?.first?.template ?? null);
+  readonly isMouseDragEnabled = computed(() => this.resolvedSimulateTouch());
 
   private autoplayInterval?: ReturnType<typeof setInterval>;
   private resizeObserver?: ResizeObserver;

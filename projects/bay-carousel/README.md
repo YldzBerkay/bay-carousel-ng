@@ -20,7 +20,9 @@
 - [Quick Start](#quick-start)
 - [Modes](#modes)
 - [API Reference](#api-reference)
+- [Breaking Change Policy](#breaking-change-policy)
 - [Accessibility and Keyboard](#accessibility-and-keyboard)
+- [Accessibility Checklist](#accessibility-checklist)
 - [Autoplay Options](#autoplay-options)
 - [Swipe Tuning](#swipe-tuning)
 - [Sync Carousel](#sync-carousel-main--thumbs)
@@ -28,6 +30,7 @@
 - [Programmatic Control](#programmatic-control)
 - [Custom Navigation Icons](#custom-navigation-icons)
 - [Style Customization](#style-customization)
+- [Release Process](#release-process)
 - [SSR Notes](#ssr-notes)
 - [Build and Publish](#build-and-publish)
 - [Troubleshooting](#troubleshooting)
@@ -130,7 +133,7 @@ interface BayCarouselSwipeEvent {
 - `spaceBetween?: number` direct override of config
 - `maxHeight?: number | string` max carousel height
 - `contentHeight?: number | string` fixed slide content height
-- `simulateTouch?: boolean` enable mouse drag simulation
+- `simulateTouch?: boolean` enable mouse drag simulation (default: `false`)
 - `loop?: boolean` loop behavior on edges
 - `allowTouchMove?: boolean` disable touch drag if false
 - `touchStartPreventDefault?: boolean` touch preventDefault control
@@ -174,6 +177,29 @@ Legacy compatibility:
 - Matching breakpoints are resolved in ascending order.
 - Last matching breakpoint wins.
 
+## Breaking Change Policy
+
+`bay-carousel-ng` follows Semantic Versioning for public API changes.
+
+Public API contract (v1 scope):
+- Inputs: `mode`, `config`, `slidesPerView`, `spaceBetween`, `simulateTouch`, `loop`, `syncGroup`, `syncRole`, `swipeThreshold`, `keyboardNavigation`
+- Outputs: `slideChange`, `swiper`, `syncSlideChange`, `swipeGesture`
+- Behavior contract: loop edges, breakpoint resolution, sync broadcast, keyboard key map
+
+Versioning rules:
+- `PATCH`: bug fixes and internal refactors with no public API or behavior-contract change
+- `MINOR`: backward-compatible new inputs/outputs/options
+- `MAJOR`: removed/renamed/retargeted inputs/outputs, changed default semantics, or keyboard/swipe/sync behavior that breaks existing integrations
+
+Deprecation policy:
+1. Mark deprecated API in docs with replacement guidance.
+2. Keep deprecated API for at least one minor cycle whenever feasible.
+3. Remove only in next major with explicit Migration Notes.
+
+Examples:
+- Non-breaking: adding optional `config.newOption?` with default-off behavior.
+- Breaking: changing `mode='navigation'` semantics, renaming `syncGroup`, or remapping `ArrowLeft/ArrowRight` behavior.
+
 ## Accessibility and Keyboard
 
 Keyboard support:
@@ -190,6 +216,18 @@ Keyboard support:
   ...
 </app-bay-carousel>
 ```
+
+## Accessibility Checklist
+
+Use this checklist before release:
+
+- [ ] `ariaLabel` is meaningful for the carousel context.
+- [ ] `announceSlideChanges` is enabled when slide changes must be announced to screen readers.
+- [ ] Prev/next buttons have clear labels (`Previous slide`, `Next slide`) or equivalent localized labels.
+- [ ] Focus order is logical: container -> controls -> interactive slide content.
+- [ ] Keyboard navigation is validated (`ArrowLeft`, `ArrowRight`, `Home`, `End`).
+- [ ] `keyboardNavigation=false` is used only when an alternative keyboard path is provided.
+- [ ] `dir='rtl'` behavior is verified for arrow keys and swipe directions.
 
 ## Autoplay Options
 
@@ -295,6 +333,41 @@ app-bay-carousel {
   --bay-carousel-hover-box-shadow: 0 4px 4px 0 #00000040;
 }
 ```
+
+Light preset:
+
+```scss
+app-bay-carousel.theme-light {
+  --bay-carousel-primary-color: #5b21b6;
+  --bay-carousel-primary-color-hover: #4c1d95;
+  --bay-carousel-border-color: #d4d4d8;
+  --bay-carousel-text-color: #18181b;
+  --bay-carousel-empty-color: #a1a1aa;
+  --bay-carousel-medium-radius: 10px;
+  --bay-carousel-hover-box-shadow: 0 6px 20px 0 #0000001f;
+}
+```
+
+Dark preset:
+
+```scss
+app-bay-carousel.theme-dark {
+  --bay-carousel-primary-color: #a78bfa;
+  --bay-carousel-primary-color-hover: #8b5cf6;
+  --bay-carousel-border-color: #3f3f46;
+  --bay-carousel-text-color: #f4f4f5;
+  --bay-carousel-empty-color: #71717a;
+  --bay-carousel-medium-radius: 10px;
+  --bay-carousel-hover-box-shadow: 0 8px 24px 0 #00000066;
+}
+```
+
+## Release Process
+
+For each release:
+- Update [`CHANGELOG.md`](./CHANGELOG.md) with `Added`, `Changed`, `Fixed`, `Deprecated`, `Removed`.
+- Include a `Migration Notes` subsection for consumer-facing upgrade actions.
+- Follow the step-by-step workflow in [`RELEASING.md`](./RELEASING.md).
 
 ## SSR Notes
 
