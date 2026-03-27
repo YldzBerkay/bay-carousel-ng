@@ -13,6 +13,7 @@
 - Built-in SVG icons with custom icon templates
 
 [npm package](https://www.npmjs.com/package/bay-carousel-ng)
+[live demo](https://quiet-entremet-8f5a9c.netlify.app/)
 
 ## Contents
 
