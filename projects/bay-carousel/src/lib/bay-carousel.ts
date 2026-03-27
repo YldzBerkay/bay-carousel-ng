@@ -65,6 +65,12 @@ export interface BayCarouselSwiperRef {
   activeIndex: number;
 }
 
+export interface BayCarouselSwipeEvent {
+  distance: number;
+  velocity: number;
+  direction: 'next' | 'prev';
+}
+
 @Component({
   selector: 'app-bay-carousel',
   imports: [CommonModule],
@@ -73,6 +79,8 @@ export interface BayCarouselSwiperRef {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BayCarouselComponent implements AfterContentInit, OnDestroy {
+  private static syncGroups = new Map<string, Set<BayCarouselComponent>>();
+
   private platformId = inject(PLATFORM_ID);
   private isBrowser = isPlatformBrowser(this.platformId);
 
@@ -89,6 +97,19 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
   readonly slidesPerView = input<number>();
   readonly spaceBetween = input<number>();
   readonly maxHeight = input<number | string>();
+  readonly contentHeight = input<number | string>();
+  readonly pauseOnHover = input<boolean>(false);
+  readonly pauseOnInteraction = input<boolean>(true);
+  readonly resumeAutoplayOnLeave = input<boolean>(true);
+  readonly keyboardNavigation = input<boolean>(true);
+  readonly ariaLabel = input<string>('Carousel');
+  readonly announceSlideChanges = input<boolean>(true);
+  readonly swipeThreshold = input<number>(0.15);
+  readonly swipeVelocityThreshold = input<number>(0);
+  readonly syncGroup = input<string>();
+  readonly syncRole = input<'main' | 'thumbs'>('main');
+  readonly visibleOnly = input<boolean>(false);
+  readonly renderBuffer = input<number>(1);
   readonly simulateTouch = input<boolean>();
   readonly loop = input<boolean>();
   readonly pagination = input<unknown>();
@@ -98,6 +119,8 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
 
   readonly slideChange = output<number>();
   readonly swiper = output<BayCarouselSwiperRef>();
+  readonly syncSlideChange = output<number>();
+  readonly swipeGesture = output<BayCarouselSwipeEvent>();
 
   readonly currentIndex = signal(0);
   readonly isDragging = signal(false);
@@ -106,6 +129,7 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
   readonly previousTranslate = signal(0);
   readonly slidesArray = signal<TemplateRef<unknown>[]>([]);
   readonly screenWidth = signal(this.isBrowser ? window.innerWidth : 1024);
+  readonly liveAnnouncement = signal('');
 
   readonly currentSlidesPerView = computed(() => {
     const directSlidesPerView = this.slidesPerView();
@@ -162,24 +186,39 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
   readonly canGoNext = computed(() => this.currentIndex() < this.maxIndex());
   readonly canGoPrev = computed(() => this.currentIndex() > 0);
   readonly totalSlides = computed(() => this.slidesArray().length);
-  readonly paginationDots = computed(() => Array(this.totalSlides()).fill(0));
+  readonly totalPages = computed(() => this.maxIndex() + 1);
+  readonly paginationDots = computed(() => Array(this.totalPages()).fill(0));
   readonly maxHeightValue = computed(() => {
     const maxH = this.maxHeight();
     if (!maxH) return null;
     return typeof maxH === 'number' ? `${maxH}px` : maxH;
   });
+  readonly contentHeightValue = computed(() => {
+    const contentH = this.contentHeight();
+    if (!contentH) return null;
+    return typeof contentH === 'number' ? `${contentH}px` : contentH;
+  });
+  readonly isRtl = computed(() => (this.dir() ?? '').toLowerCase() === 'rtl');
   readonly prevIconTemplate = computed(() => this.prevIcons?.first?.template ?? null);
   readonly nextIconTemplate = computed(() => this.nextIcons?.first?.template ?? null);
 
   private autoplayInterval?: ReturnType<typeof setInterval>;
   private resizeObserver?: ResizeObserver;
   private windowResizeListener?: () => void;
+  private dragStartTime = 0;
+  private suppressSyncBroadcast = false;
+  private registeredSyncGroup?: string;
 
   constructor() {
     effect(() => {
       const index = this.currentIndex();
       this.updatePosition();
       this.slideChange.emit(index);
+      this.syncSlideChange.emit(index);
+      this.broadcastSync(index);
+      if (this.announceSlideChanges()) {
+        this.liveAnnouncement.set(`Slide ${index + 1} of ${this.totalSlides()}`);
+      }
     });
 
     effect(() => {
@@ -207,6 +246,7 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
   ngAfterContentInit(): void {
     this.updateSlidesArray();
     this.slides.changes.subscribe(() => this.updateSlidesArray());
+    this.registerToSyncGroup();
 
     if (this.isBrowser) {
       this.updateScreenWidth();
@@ -225,6 +265,7 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopAutoplay();
+    this.unregisterFromSyncGroup();
     this.resizeObserver?.disconnect();
     if (this.isBrowser && this.windowResizeListener) {
       window.removeEventListener('resize', this.windowResizeListener);
@@ -233,6 +274,44 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
 
   private updateSlidesArray(): void {
     this.slidesArray.set(this.slides.map((slide) => slide.template));
+  }
+
+  private registerToSyncGroup(): void {
+    const group = this.syncGroup();
+    if (!group) return;
+    if (!BayCarouselComponent.syncGroups.has(group)) {
+      BayCarouselComponent.syncGroups.set(group, new Set());
+    }
+    BayCarouselComponent.syncGroups.get(group)?.add(this);
+    this.registeredSyncGroup = group;
+  }
+
+  private unregisterFromSyncGroup(): void {
+    if (!this.registeredSyncGroup) return;
+    const set = BayCarouselComponent.syncGroups.get(this.registeredSyncGroup);
+    set?.delete(this);
+    if (set && set.size === 0) {
+      BayCarouselComponent.syncGroups.delete(this.registeredSyncGroup);
+    }
+    this.registeredSyncGroup = undefined;
+  }
+
+  private broadcastSync(index: number): void {
+    if (this.suppressSyncBroadcast) return;
+    const group = this.syncGroup();
+    if (!group) return;
+    const peers = BayCarouselComponent.syncGroups.get(group);
+    if (!peers) return;
+    for (const peer of peers) {
+      if (peer === this) continue;
+      peer.receiveSync(index);
+    }
+  }
+
+  private receiveSync(index: number): void {
+    this.suppressSyncBroadcast = true;
+    this.slideTo(index);
+    this.suppressSyncBroadcast = false;
   }
 
   private updatePosition(): void {
@@ -305,7 +384,10 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
 
     this.isDragging.set(true);
     this.startX.set(this.getPositionX(event));
-    this.stopAutoplay();
+    this.dragStartTime = Date.now();
+    if (this.pauseOnInteraction()) {
+      this.stopAutoplay();
+    }
 
     const trackEl = this.track()?.nativeElement;
     if (trackEl) trackEl.style.transition = 'none';
@@ -336,17 +418,63 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
 
     const movedBy = this.currentTranslate() - this.previousTranslate();
     const containerWidth = this.container()?.nativeElement.offsetWidth || 0;
-    const threshold = containerWidth * 0.15;
+    const threshold = this.resolveSwipeThreshold(containerWidth);
+    const elapsedMs = Math.max(1, Date.now() - this.dragStartTime);
+    const velocity = Math.abs(movedBy) / elapsedMs;
+    const loopEnabled = this.loop() ?? this.config().loop;
+    const velocityPassed = this.swipeVelocityThreshold() > 0 && velocity >= this.swipeVelocityThreshold();
+    const distancePassed = Math.abs(movedBy) >= threshold;
+    const shouldSwipe = distancePassed || velocityPassed;
+    const swipeNextTriggered = shouldSwipe && (this.isRtl() ? movedBy > 0 : movedBy < 0);
+    const swipePrevTriggered = shouldSwipe && (this.isRtl() ? movedBy < 0 : movedBy > 0);
 
-    if (movedBy < -threshold && this.canGoNext()) {
+    if (swipeNextTriggered && (this.canGoNext() || !!loopEnabled)) {
+      this.swipeGesture.emit({ distance: movedBy, velocity, direction: 'next' });
       this.slideNext();
-    } else if (movedBy > threshold && this.canGoPrev()) {
+    } else if (swipePrevTriggered && (this.canGoPrev() || !!loopEnabled)) {
+      this.swipeGesture.emit({ distance: movedBy, velocity, direction: 'prev' });
       this.slidePrev();
     } else {
       this.updatePosition();
     }
 
     if (this.config().autoplay) this.startAutoplay();
+  }
+
+  onContainerMouseEnter(): void {
+    if (this.pauseOnHover() && this.config().autoplay) {
+      this.stopAutoplay();
+    }
+  }
+
+  onContainerMouseLeave(): void {
+    if (this.pauseOnHover() && this.resumeAutoplayOnLeave() && this.config().autoplay) {
+      this.startAutoplay();
+    }
+  }
+
+  onKeydown(event: KeyboardEvent): void {
+    if (!this.keyboardNavigation()) return;
+    if (event.key === 'ArrowRight') {
+      this.isRtl() ? this.slidePrev() : this.slideNext();
+      event.preventDefault();
+    } else if (event.key === 'ArrowLeft') {
+      this.isRtl() ? this.slideNext() : this.slidePrev();
+      event.preventDefault();
+    } else if (event.key === 'Home') {
+      this.slideTo(0);
+      event.preventDefault();
+    } else if (event.key === 'End') {
+      this.slideTo(this.maxIndex());
+      event.preventDefault();
+    }
+  }
+
+  shouldRenderSlide(index: number): boolean {
+    if (!this.visibleOnly()) return true;
+    const start = Math.max(0, this.currentIndex() - this.renderBuffer());
+    const end = Math.min(this.totalSlides() - 1, this.currentIndex() + this.currentSlidesPerView() + this.renderBuffer() - 1);
+    return index >= start && index <= end;
   }
 
   get swiperRef(): BayCarouselSwiperRef {
@@ -375,6 +503,14 @@ export class BayCarouselComponent implements AfterContentInit, OnDestroy {
 
   private getPositionX(event: MouseEvent | TouchEvent): number {
     return event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+  }
+
+  private resolveSwipeThreshold(containerWidth: number): number {
+    const thresholdInput = this.swipeThreshold();
+    if (thresholdInput <= 1) {
+      return containerWidth * Math.max(0, thresholdInput);
+    }
+    return thresholdInput;
   }
 
   private startAutoplay(): void {

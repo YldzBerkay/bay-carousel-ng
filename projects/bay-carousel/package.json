@@ -1,6 +1,6 @@
 {
   "name": "bay-carousel-ng",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Angular 21 standalone carousel component with navigation, pagination and breakpoint modes.",
   "keywords": [
     "angular",

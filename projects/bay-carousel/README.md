@@ -1,31 +1,35 @@
 # bay-carousel-ng
 
-`bay-carousel-ng` is a lightweight carousel/slider library for Angular 21+ standalone applications.
+`bay-carousel-ng` is a standalone Angular carousel/slider library for Angular 21+ applications.
+
+- 5 modes: `default`, `navigation`, `pagination`, `fraction`, `breakpoint`
+- Responsive breakpoints
+- Touch/mouse drag
+- Autoplay + loop
+- Keyboard and accessibility controls
+- Sync carousel support (main + thumbs)
+- Performance mode for large lists (`visibleOnly`, `renderBuffer`)
+- Programmatic API (`swiperRef`)
+- Built-in SVG icons with custom icon templates
 
 [npm package](https://www.npmjs.com/package/bay-carousel-ng)
-
-- Standalone Angular component
-- Template-based slide system (`ng-template`)
-- 5 display modes (`default`, `navigation`, `pagination`, `fraction`, `breakpoint`)
-- Breakpoint-based responsive behavior
-- Drag/touch support
-- Autoplay and loop
-- Programmatic control API (`swiperRef`)
-- Built-in SVG icons + custom icon template support
 
 ## Contents
 
 - [Installation](#installation)
-- [npm Page](#npm-page)
 - [Quick Start](#quick-start)
 - [Modes](#modes)
 - [API Reference](#api-reference)
-- [Custom Icon Templates](#custom-icon-templates)
+- [Accessibility and Keyboard](#accessibility-and-keyboard)
+- [Autoplay Options](#autoplay-options)
+- [Swipe Tuning](#swipe-tuning)
+- [Sync Carousel](#sync-carousel-main--thumbs)
+- [Performance Mode](#performance-mode)
 - [Programmatic Control](#programmatic-control)
+- [Custom Navigation Icons](#custom-navigation-icons)
 - [Style Customization](#style-customization)
-- [SSR and Browser Behavior](#ssr-and-browser-behavior)
-- [Development Build Pack](#development-build-pack)
-- [npm Public Publish Guide](#npm-public-publish-guide-maintainer)
+- [SSR Notes](#ssr-notes)
+- [Build and Publish](#build-and-publish)
 - [Troubleshooting](#troubleshooting)
 
 ## Installation
@@ -34,20 +38,11 @@
 npm i bay-carousel-ng
 ```
 
-> `peerDependencies`: `@angular/core` and `@angular/common` (v21+)
-
-## npm Page
-
-- Package URL: [https://www.npmjs.com/package/bay-carousel-ng](https://www.npmjs.com/package/bay-carousel-ng)
-- You can check the latest published version with:
-
-```bash
-npm view bay-carousel-ng version
-```
+Peer dependencies:
+- `@angular/core` (v21+)
+- `@angular/common` (v21+)
 
 ## Quick Start
-
-### 1) Import components
 
 ```ts
 import { Component } from '@angular/core';
@@ -56,69 +51,38 @@ import { BayCarouselComponent, BayCarouselSlideDirective } from 'bay-carousel-ng
 @Component({
   selector: 'app-example',
   imports: [BayCarouselComponent, BayCarouselSlideDirective],
-  templateUrl: './example.component.html',
+  template: `
+    <app-bay-carousel [config]="config" mode="navigation">
+      <ng-template bayCarouselSlide>Slide 1</ng-template>
+      <ng-template bayCarouselSlide>Slide 2</ng-template>
+      <ng-template bayCarouselSlide>Slide 3</ng-template>
+    </app-bay-carousel>
+  `,
 })
-export class ExampleComponent {}
-```
-
-### 2) Use in template
-
-```html
-<app-bay-carousel>
-  <ng-template bayCarouselSlide>
-    <div>Slide 1</div>
-  </ng-template>
-  <ng-template bayCarouselSlide>
-    <div>Slide 2</div>
-  </ng-template>
-  <ng-template bayCarouselSlide>
-    <div>Slide 3</div>
-  </ng-template>
-</app-bay-carousel>
+export class ExampleComponent {
+  config = {
+    slidesPerView: 1,
+    spaceBetween: 16,
+    breakpoints: {
+      768: { slidesPerView: 2, spaceBetween: 20 },
+      1200: { slidesPerView: 3, spaceBetween: 24 },
+    },
+  };
+}
 ```
 
 ## Modes
 
-You can control behavior with the `mode` input.
+Use `mode` input:
 
-### `default`
-- Renders only the slide area.
-- No navigation/pagination UI.
-
-```html
-<app-bay-carousel mode="default">...</app-bay-carousel>
-```
-
-### `navigation`
-- Renders previous/next navigation buttons.
-- Uses built-in SVG icons by default.
-- Can be overridden with `bayCarouselPrevIcon` and `bayCarouselNextIcon`.
-
-```html
-<app-bay-carousel mode="navigation">...</app-bay-carousel>
-```
-
-### `pagination`
-- Renders pagination dots below.
-- Clicking a dot moves to that slide.
+- `default`: slide track only
+- `navigation`: previous/next arrows
+- `pagination`: clickable pagination dots (page-based)
+- `fraction`: `current / total` display
+- `breakpoint`: debug info (`slidesPerView`, screen width)
 
 ```html
 <app-bay-carousel mode="pagination">...</app-bay-carousel>
-```
-
-### `fraction`
-- Displays `activeSlide / totalSlides`.
-
-```html
-<app-bay-carousel mode="fraction">...</app-bay-carousel>
-```
-
-### `breakpoint`
-- Debug-focused mode.
-- Shows current screen width and active `slidesPerView`.
-
-```html
-<app-bay-carousel mode="breakpoint">...</app-bay-carousel>
 ```
 
 ## API Reference
@@ -150,82 +114,131 @@ interface BayCarouselSwiperRef {
   update(): void;
   activeIndex: number;
 }
+
+interface BayCarouselSwipeEvent {
+  distance: number;
+  velocity: number;
+  direction: 'next' | 'prev';
+}
 ```
 
 ### Inputs
 
-- `config: BayCarouselConfig`  
-  Main configuration object.
-- `mode: BayCarouselMode`  
-  Display mode.
-- `slidesPerView?: number`  
-  Overrides `config.slidesPerView`.
-- `spaceBetween?: number`  
-  Overrides `config.spaceBetween`.
-- `maxHeight?: number | string`  
-  Max height for the carousel (`300` or `'300px'`).
-- `simulateTouch?: boolean`  
-  Enables mouse drag support (fallback to `config.simulateTouch`).
-- `loop?: boolean`  
-  Wraps from last to first and vice versa.
-- `pagination?: unknown`  
-  Backward compatibility input (currently not used in internal logic).
-- `allowTouchMove?: boolean`  
-  Disables touch drag when set to `false`.
-- `touchStartPreventDefault?: boolean`  
-  Controls `preventDefault` on touch start.
-- `dir?: string`  
-  Sets `dir` attribute on container (`ltr` / `rtl`).
+- `config: BayCarouselConfig` main carousel config
+- `mode: BayCarouselMode` mode selection
+- `slidesPerView?: number` direct override of config
+- `spaceBetween?: number` direct override of config
+- `maxHeight?: number | string` max carousel height
+- `contentHeight?: number | string` fixed slide content height
+- `simulateTouch?: boolean` enable mouse drag simulation
+- `loop?: boolean` loop behavior on edges
+- `allowTouchMove?: boolean` disable touch drag if false
+- `touchStartPreventDefault?: boolean` touch preventDefault control
+- `dir?: string` `ltr` / `rtl`
+
+Autoplay and interaction:
+- `pauseOnHover?: boolean`
+- `pauseOnInteraction?: boolean`
+- `resumeAutoplayOnLeave?: boolean`
+
+Accessibility:
+- `keyboardNavigation?: boolean`
+- `ariaLabel?: string`
+- `announceSlideChanges?: boolean`
+
+Swipe tuning:
+- `swipeThreshold?: number` threshold (`<= 1` ratio, `> 1` px)
+- `swipeVelocityThreshold?: number`
+
+Sync:
+- `syncGroup?: string`
+- `syncRole?: 'main' | 'thumbs'`
+
+Performance:
+- `visibleOnly?: boolean`
+- `renderBuffer?: number`
+
+Legacy compatibility:
+- `pagination?: unknown` (reserved/backward-compat input)
 
 ### Outputs
 
-- `slideChange: number`  
-  Emits when active index changes.
-- `swiper: BayCarouselSwiperRef`  
-  Emits programmatic control object.
+- `slideChange: number`
+- `swiper: BayCarouselSwiperRef`
+- `syncSlideChange: number`
+- `swipeGesture: BayCarouselSwipeEvent`
 
-### `config.breakpoints` behavior
+### Breakpoint Behavior
 
-- Breakpoint keys are minimum widths in pixels.
-- Breakpoints are sorted in ascending order, and the last matching one (`screenWidth >= breakpoint`) wins.
-- You only need to define values that should change at each breakpoint.
+- Breakpoints are minimum widths.
+- Matching breakpoints are resolved in ascending order.
+- Last matching breakpoint wins.
 
-Example:
+## Accessibility and Keyboard
 
-```ts
-config: BayCarouselConfig = {
-  slidesPerView: 1,
-  spaceBetween: 16,
-  breakpoints: {
-    640: { slidesPerView: 2 },
-    1024: { slidesPerView: 3, spaceBetween: 24 },
-    1440: { slidesPerView: 4, spaceBetween: 28 },
-  },
-};
-```
-
-## Custom Icon Templates
-
-When `mode="navigation"`, you can replace built-in SVG icons with custom templates.
+Keyboard support:
+- `ArrowLeft`, `ArrowRight`
+- `Home` (go first page)
+- `End` (go last page)
 
 ```html
-<app-bay-carousel mode="navigation">
-  <ng-template bayCarouselPrevIcon>
-    <span class="my-icon">PREV</span>
-  </ng-template>
+<app-bay-carousel
+  [keyboardNavigation]="true"
+  [ariaLabel]="'Featured content carousel'"
+  [announceSlideChanges]="true"
+>
+  ...
+</app-bay-carousel>
+```
 
-  <ng-template bayCarouselNextIcon>
-    <span class="my-icon">NEXT</span>
-  </ng-template>
+## Autoplay Options
 
-  <ng-template bayCarouselSlide>...</ng-template>
-  <ng-template bayCarouselSlide>...</ng-template>
+```html
+<app-bay-carousel
+  [config]="{ autoplay: true, autoplayDelay: 2500, loop: true }"
+  [pauseOnHover]="true"
+  [pauseOnInteraction]="true"
+  [resumeAutoplayOnLeave]="true"
+>
+  ...
+</app-bay-carousel>
+```
+
+## Swipe Tuning
+
+```html
+<app-bay-carousel
+  [swipeThreshold]="0.15"
+  [swipeVelocityThreshold]="0.35"
+  (swipeGesture)="onSwipe($event)"
+>
+  ...
+</app-bay-carousel>
+```
+
+## Sync Carousel (Main + Thumbs)
+
+```html
+<app-bay-carousel mode="navigation" syncGroup="galleryA" syncRole="main">
+  ...
+</app-bay-carousel>
+
+<app-bay-carousel mode="default" syncGroup="galleryA" syncRole="thumbs" [contentHeight]="90">
+  ...
+</app-bay-carousel>
+```
+
+## Performance Mode
+
+Use for large lists:
+
+```html
+<app-bay-carousel [visibleOnly]="true" [renderBuffer]="2" [contentHeight]="130">
+  ...
 </app-bay-carousel>
 ```
 
 ## Programmatic Control
-
-### Using `viewChild` component reference
 
 ```ts
 import { Component, viewChild } from '@angular/core';
@@ -234,48 +247,42 @@ import { BayCarouselComponent } from 'bay-carousel-ng';
 @Component({
   selector: 'app-programmatic',
   imports: [BayCarouselComponent],
-  templateUrl: './programmatic.component.html',
+  template: `<app-bay-carousel #carousel>...</app-bay-carousel>`,
 })
 export class ProgrammaticComponent {
   readonly carousel = viewChild.required<BayCarouselComponent>('carousel');
 
   next(): void {
-    this.carousel().swiperRef.slideNext(300);
+    this.carousel().swiperRef.slideNext();
   }
 
   prev(): void {
-    this.carousel().swiperRef.slidePrev(300);
+    this.carousel().swiperRef.slidePrev();
   }
 
-  goSecond(): void {
-    this.carousel().swiperRef.slideTo(1, 300);
+  goTo(index: number): void {
+    this.carousel().swiperRef.slideTo(index);
   }
 }
 ```
 
-```html
-<app-bay-carousel #carousel>...</app-bay-carousel>
-```
-
-### Using `swiper` output
+## Custom Navigation Icons
 
 ```html
-<app-bay-carousel (swiper)="setSwiper($event)">...</app-bay-carousel>
-```
+<app-bay-carousel mode="navigation">
+  <ng-template bayCarouselPrevIcon>
+    <span>PREV</span>
+  </ng-template>
 
-```ts
-import { BayCarouselSwiperRef } from 'bay-carousel-ng';
+  <ng-template bayCarouselNextIcon>
+    <span>NEXT</span>
+  </ng-template>
 
-swiperRef?: BayCarouselSwiperRef;
-
-setSwiper(ref: BayCarouselSwiperRef): void {
-  this.swiperRef = ref;
-}
+  <ng-template bayCarouselSlide>...</ng-template>
+</app-bay-carousel>
 ```
 
 ## Style Customization
-
-The package defines fallback CSS variables. You can override them at app level:
 
 ```scss
 app-bay-carousel {
@@ -289,13 +296,12 @@ app-bay-carousel {
 }
 ```
 
-## SSR and Browser Behavior
+## SSR Notes
 
-- Uses `isPlatformBrowser` checks for SSR compatibility.
-- `window` and `ResizeObserver` are only used in browser runtime.
-- Uses a fallback screen width on server-side rendering.
+- Uses browser guards (`isPlatformBrowser`) for window-dependent logic.
+- `ResizeObserver` and window listeners are browser-only.
 
-## Development Build Pack
+## Build and Publish
 
 From workspace root:
 
@@ -310,64 +316,28 @@ Library-only build:
 ng build bay-carousel
 ```
 
-Package dry-run:
+Pack test:
 
 ```bash
 cd dist/bay-carousel
 npm pack
 ```
 
-## npm Public Publish Guide (Maintainer)
-
-Run the following steps from workspace root:
-
-1. Bump version:
-
-```bash
-cd projects/bay-carousel
-npm version patch
-```
-
-2. Build library:
-
-```bash
-cd ../..
-ng build bay-carousel
-```
-
-3. Test package tarball:
-
-```bash
-cd dist/bay-carousel
-npm pack
-```
-
-4. Login to npm:
-
-```bash
-npm login
-```
-
-5. Publish publicly:
+Publish:
 
 ```bash
 npm publish --access public
 ```
 
-Notes:
-- Package name must be available on npm (`bay-carousel-ng`).
-- Scoped packages (`@scope/bay-carousel-ng`) also require `--access public`.
-- Verify `README.md`, `LICENSE`, and repository metadata before publishing.
-
 ## Troubleshooting
 
-- `NG0303: Can't bind to ...`  
-  Ensure standalone imports are included (`BayCarouselComponent`, `BayCarouselSlideDirective`).
-- Navigation/pagination not visible  
-  Check `mode` value (`navigation` / `pagination` / `fraction`).
-- Drag does not work  
-  `allowTouchMove` might be `false`, or `simulateTouch` may be disabled for mouse drag.
-- Unexpected slide widths  
+- **Bindings not recognized (`NG0303`)**  
+  Ensure imports include `BayCarouselComponent` and `BayCarouselSlideDirective`.
+- **No arrows or pagination**  
+  Check `mode`.
+- **Swipe feels unresponsive**  
+  Check `allowTouchMove`, `simulateTouch`, `swipeThreshold`, `swipeVelocityThreshold`.
+- **Unexpected layout widths**  
   Ensure parent container has a resolved width.
-- Programmatic control is undefined  
-  Do not call methods before `viewChild` is ready (use after view init lifecycle).
+- **Programmatic API undefined**  
+  Access `viewChild` after view init lifecycle.

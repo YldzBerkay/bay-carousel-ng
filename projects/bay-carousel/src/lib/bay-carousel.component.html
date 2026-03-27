@@ -2,11 +2,17 @@
   #container
   class="bay-carousel-container"
   [attr.dir]="dir() ?? null"
+  [attr.aria-label]="ariaLabel()"
+  [attr.aria-roledescription]="'carousel'"
+  tabindex="0"
   [style.max-height]="maxHeightValue()"
+  (mouseenter)="onContainerMouseEnter()"
+  (mouseleave)="onContainerMouseLeave()"
+  (keydown)="onKeydown($event)"
   (mousedown)="onDragStart($event)"
   (mousemove)="onDragMove($event)"
   (mouseup)="onDragEnd()"
-  (mouseleave)="onDragEnd()"
+  (mouseout)="onDragEnd()"
   (touchstart)="onDragStart($event)"
   (touchmove)="onDragMove($event)"
   (touchend)="onDragEnd()"
@@ -35,7 +41,7 @@
     [style.max-height]="maxHeightValue()"
     [style.gap]="currentSpaceBetween() + 'px'"
   >
-    @for (slide of slidesArray(); track $index) {
+    @for (slide of slidesArray(); track $index; let slideIndex = $index) {
       <div
         class="bay-carousel-slide"
         [style.flex]="'0 0 calc((100% - ' + (currentSpaceBetween() * (currentSlidesPerView() - 1)) + 'px) / ' + currentSlidesPerView() + ')'"
@@ -43,8 +49,15 @@
         [style.min-width]="'calc((100% - ' + (currentSpaceBetween() * (currentSlidesPerView() - 1)) + 'px) / ' + currentSlidesPerView() + ')'"
         [style.max-width]="'calc((100% - ' + (currentSpaceBetween() * (currentSlidesPerView() - 1)) + 'px) / ' + currentSlidesPerView() + ')'"
       >
-        <div class="bay-carousel-slide-content">
-          <ng-container [ngTemplateOutlet]="slide"></ng-container>
+        <div
+          class="bay-carousel-slide-content"
+          [style.height]="contentHeightValue() || '100%'"
+          [style.min-height]="contentHeightValue() || '100%'"
+          [style.max-height]="contentHeightValue() || '100%'"
+        >
+          @if (shouldRenderSlide(slideIndex)) {
+            <ng-container [ngTemplateOutlet]="slide"></ng-container>
+          }
         </div>
       </div>
     }
@@ -86,5 +99,9 @@
 
   @if (mode() === 'breakpoint') {
     <div class="bay-carousel-breakpoint-info">Showing {{ currentSlidesPerView() }} slide(s) | Screen: {{ screenWidth() }}px</div>
+  }
+
+  @if (announceSlideChanges()) {
+    <span class="bay-carousel-sr-only" aria-live="polite">{{ liveAnnouncement() }}</span>
   }
 </div>
